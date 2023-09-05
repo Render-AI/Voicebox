@@ -3,7 +3,7 @@
 # Set bash to 'debug' mode, it will exit on :
 # -e 'error', -u 'undefined variable', -o ... 'error in pipeline', -x 'print commands',
 set -e
-set -u
+#set -u
 set -o pipefail
 
 . ./path.sh || exit 1;
@@ -42,7 +42,6 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
     python local/prepare_lexicon.py ${download_dir}/MFA/librispeech-lexicon.txt ${download_dir}/MFA/modified_librispeech-lexicon.txt
     echo "Step 2: Done"
 fi
-
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
     echo "Step 3: MFA, if error, pls check ./temp dir"

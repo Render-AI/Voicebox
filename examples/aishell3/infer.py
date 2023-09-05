@@ -29,9 +29,12 @@ def mel2wav(mel, wav_name):
 
 
 def main():
-    root = Path("/data/Users/chenhaitao/Codes/leetcode/Voicebox/examples/ljspeech/")
-    exp_dir = Path("lightning_logs/version_0")
-    chkt_name = "epoch=60-step=49715.ckpt"
+    parser = argparse.ArgumentParser(description="Process textgrid to lab")
+    parser.add_argument("test_path", type=Path, help="test.txt")
+    args = parser.parse_args()
+
+    exp_dir = Path("lightning_logs/version_1")
+    chkt_name = "epoch=15-step=63232.ckpt"
     with open(exp_dir / "config.yaml", "r") as f:
         configuration = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -41,19 +44,21 @@ def main():
     )
     model.eval()
     test_dataset = AudioTextDataset(
-        metadata_path=root / "data/eval.txt",
-        phonesets_path=root / "data/phonesets.txt",
-        melspec_dir=root / "data/melspec",
-        text_path=root / "data/phone_transcripts.pt",
+        metadata_path=args.test_path / "test.txt",
+        phonesets_path="data/phonesets.txt",
+        melspec_dir=args.test_path / "melspec",
+        text_path=args.test_path / "phone_transcripts.pt",
+        mel_mean=-6.546575,
+        mel_std=2.4786096,
     )
 
     # print(test_dataset[0])
 
     d = test_dataset[0]
 
-    normed_melspec = d["normed_melspec"].unsqueeze(0).transpose(1, 2).cuda()
+    melspec = d["melspec"].unsqueeze(0).transpose(1, 2).cuda()
 
-
+    melspec = (melspec - test_dataset.mel_mean) / (test_dataset.mel_std**2)
 
     aligned_phones_ids = d["aligned_phones_ids"].unsqueeze(0).cuda()
 
@@ -62,25 +67,34 @@ def main():
     length = aligned_phones_ids.shape[1]
     mask = torch.zeros(aligned_phones_ids.shape).bool()
 
+    mask_start = int(0.1 * length)
+    mask_end = int(0.3 * length)
 
-    mask_start = int(0.2 * length)
-    mask_end = int(0.6 * length)
-
-    mask[0, mask_start : mask_end] = True
+    mask[0, mask_start:mask_end] = True
     mask = mask.cuda()
-    normed_melspec = normed_melspec * rearrange(~mask, "... -> ... 1")
-    print(normed_melspec)
+    melspec = melspec * rearrange(~mask, "... -> ... 1")
+    print(melspec)
 
     st = time()
     with torch.no_grad():
         all_melspec = model.generate(
-            phoneme_ids=aligned_phones_ids, cond=normed_melspec, mask=mask
+            phoneme_ids=aligned_phones_ids, cond=melspec, mask=mask
         )
     print(f"{time() - st} sec used in Voicebox")
-   
-    new_melspec = torch.cat((normed_melspec[:, :mask_start], all_melspec[:, mask_start:mask_end], normed_melspec[:, mask_end:]), dim=1)
 
-    new_melspec = new_melspec * (test_dataset.mel_std ** 2)+ test_dataset.mel_mean
+    new_melspec = torch.cat(
+        (
+            melspec[:, :mask_start],
+            all_melspec[:, mask_start:mask_end],
+            melspec[:, mask_end:],
+        ),
+        dim=1,
+    )
+
+    torch.save(new_melspec, "test.pt")
+    return
+
+    new_melspec = new_melspec * test_dataset.mel_std + test_dataset.mel_mean
 
     st = time()
     mel2wav(new_melspec, "test.wav")

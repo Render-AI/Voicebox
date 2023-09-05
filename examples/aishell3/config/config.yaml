@@ -38,12 +38,12 @@ trainer:
   num_sanity_val_steps: 0
 model:
   model_conf:
-    dim_in: 128
+    dim_in: 80
     num_phoneme_tokens: 511
     dim: 1024
     heads: 8
-    depth: 6
-    ff_mult: 2
+    depth: 8
+    ff_mult: 4
     attention_dropout: 0.
     activation_dropout: 0.1
     conv_pos_embed_kernel_size: 31
@@ -59,19 +59,19 @@ model:
     decay_steps: 40000
 data:
   trainset:
-    root: /data/Users/chenhaitao/Codes/leetcode/Voicebox/examples/ljspeech/data
+    root: ./data
     meta: train.txt
     phonesets: phonesets.txt
     melspec_dir: melspec
     text_path: phone_transcripts.pt
     max_eval_sample: -1
   valset:
-    root: /data/Users/chenhaitao/Codes/leetcode/Voicebox/examples/ljspeech/data
+    root: ./data
     meta: eval.txt
     phonesets: phonesets.txt
     melspec_dir: melspec
     text_path: phone_transcripts.pt
     max_eval_sample: 8
-  mel_mean: -5.365301
-  mel_std: 2.0389206
+  mel_mean: -6.546575
+  mel_std: 2.4786096
   batch_size: 16

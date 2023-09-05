@@ -1,8 +1,8 @@
 ## TextGrid
 
-You can use textgrid from [ming024/FastSpeech2](https://github.com/ming024/FastSpeech2), and you need read prepare.sh  and change it.
+You can use textgrid from [ming024/FastSpeech2](https://github.com/ming024/FastSpeech2), and you need read prepare.sh  and change it. 
 
-or, you can do it by yourself, I suggest use conda env
+or, you can do it by yourself, I suggest use conda env. This example will train MFA model from scratch, you need newer OS, CentOS 7 is failed to train.
 
 ```bash
 conda create -n aligner -c conda-forge montreal-forced-aligner=2.2.17 -y
@@ -12,7 +12,10 @@ conda deactivate
 ```
 
 ## Vocoder
-This example use Vocoder from [bshall/hifigan](https://github.com/bshall/hifigan)
+This example use Vocoder from [NVIDIA/BigVGAN](https://github.com/NVIDIA/BigVGAN)
+
+I'll upload my trained weights.
+
 
 ## Mel mean and std
 

@@ -11,38 +11,36 @@ set -o pipefail
 export CUDA_VISIBLE_DEVICES="1"
 
 # General configuration
-stage=3              # Processes starts from the specified stage.
-stop_stage=5     # Processes is stopped at the specified stage.
+stage=0              # Processes starts from the specified stage.
+stop_stage=0     # Processes is stopped at the specified stage.
 
 
-download_dir=downloads
+MFA_dir=data/MFA
 
-feat_dir=data
+test_dir=test
 
 
 
 if [ ${stage} -le 0 ] && [ ${stop_stage} -ge 0 ]; then
     echo "Step 0: Get aligned transcript and phones"
-    # This example will use already processed Aligned IPA transcriptions
-    python local/textgrid2lab.py "${feat_dir}/TextGrid" ${feat_dir}
+    mfa align ${test_dir}/wavs ${MFA_dir}/lexicon.txt ${MFA_dir}/chinese.zip ${test_dir}/TextGrid
+    python local/textgrid2lab.py "${test_dir}/TextGrid" ${test_dir}
     echo "Step 0: Done"
 fi
 
 if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
-    echo "Step 1: Get melspectrogram"
-    # This example will use 
-    python local/melspec.py "${download_dir}/LJSpeech-1.1/wavs" ${feat_dir}/melspec
+    echo "Step 1: Get melspec"
     echo "Step 1: Done"
 fi
 
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
     echo "Step 2: Split train, eval, test"
-    python local/split_dataset.py ${download_dir}/LJSpeech-1.1/wavs ${feat_dir}
+    python local/gen_test_dataset.py --unaligned ${test_dir}/wavs ${test_dir}
     echo "Step 2: Done"
 fi
 
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
-    echo "Step 3: Train audio model"
-    python ../../voicebox/train.py fit --config config/config.yaml
+    echo "Step 3: Generate audio"
+    python infer.py --test_path ${test_dir}
     echo "Step 3: Done"
 fi

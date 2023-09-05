@@ -20,6 +20,8 @@ class AudioTextDataset(Dataset):
         melspec_dir: Union[str, List[str]],
         text_path: Union[str, List[str]],
         max_sample=None,
+        mel_mean = -5.884,
+        mel_std = 2.261,
     ) -> None:
         super().__init__()
 
@@ -39,8 +41,10 @@ class AudioTextDataset(Dataset):
         self.PAD: int = 511
 
         # a little diff with paper
-        self.mel_mean = -5.365301
-        self.mel_std = 2.0389206
+        self.mel_mean = mel_mean
+        self.mel_std = mel_std
+        print(self.mel_mean)
+        print(self.mel_std)
 
     def __len__(self) -> int:
         return len(self.dataframe)
@@ -59,13 +63,17 @@ class AudioTextDataset(Dataset):
 
         # melspec input
         melspec = torch.load((self.melspec_dir / wav_stem).with_suffix(".pt"))  # 1 * 128 * T
+        # print(melspec.shape)
 
         # aliged phones input
         phone_info = self.text[wav_stem]
         phones, phones_ids = self.get_aligned_phone_id(phone_info)
         phones_ids = torch.tensor(phones_ids, dtype=torch.long)
 
-        assert abs(melspec.shape[-1] - phones_ids.shape[0]) <= 6, f"Melspec shape: {melspec.shape}, phones_ids shape: {phones_ids.shape}"
+        assert abs(melspec.shape[-1] - phones_ids.shape[0]) <= 6, f"{wav_stem} melspec shape: {melspec.shape}, phones_ids shape: {phones_ids.shape}"
+        # print(melspec.shape)
+        # print(phones_ids.shape)
+        # return
 
         min_length = min(melspec.shape[-1], phones_ids.shape[0])
 
@@ -74,10 +82,12 @@ class AudioTextDataset(Dataset):
 
         length = melspec.shape[-1]
 
+
         return {
             "id": idx,
             "length": length,
             "melspec": melspec[0],             # 128 * T
+            "normed_melspec": (melspec[0] - self.mel_mean) / (self.mel_std ** 2),             # 128 * T
             "aligned_phones_ids": phones_ids,
         }
 
@@ -97,7 +107,7 @@ class AudioTextDataset(Dataset):
         for feature in features:
             sample_index.append(feature["id"])
             phones_ids.append(feature["aligned_phones_ids"])
-            melspec.append(feature["melspec"])
+            melspec.append(feature["normed_melspec"])
             length.append(feature["length"])
 
         batch_size: int = len(sample_index)
@@ -107,10 +117,10 @@ class AudioTextDataset(Dataset):
 
         # collate melspec
         melspec_t: torch.Tensor = torch.zeros(
-            (batch_size, 128, max_length), dtype=torch.float
+            (batch_size, melspec[0].shape[0], max_length), dtype=torch.float
         )
         for i, frame_seq in enumerate(melspec):
-            melspec_t[i, :, : frame_seq.shape[-1]] = (frame_seq - self.mel_mean) / self.mel_std
+            melspec_t[i, :, : frame_seq.shape[-1]] = frame_seq
 
 
         # collate text

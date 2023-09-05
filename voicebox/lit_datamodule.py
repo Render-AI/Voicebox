@@ -25,6 +25,8 @@ class AudioTextDataModule(LightningDataModule):
             "melspec_dir": "melspec",
             "text_path": "lab.pt",
         },
+        mel_mean = -0.06489375,
+        mel_std = 3.9391663,
         batch_size=4,
     ):
         super().__init__()
@@ -32,6 +34,9 @@ class AudioTextDataModule(LightningDataModule):
         self.train_set = trainset
         self.val_set = valset
 
+        self.mel_mean = mel_mean
+        self.mel_std = mel_std
+        
         self.batch_size = batch_size
 
     def prepare_data(self):
@@ -45,6 +50,8 @@ class AudioTextDataModule(LightningDataModule):
             melspec_dir=Path(self.train_set["root"]) / self.train_set["melspec_dir"],
             text_path=Path(self.train_set["root"]) / self.train_set["text_path"],
             max_sample=self.train_set["max_eval_sample"],
+            mel_mean = self.mel_mean,
+            mel_std = self.mel_std
         )
         self._val_dataset = AudioTextDataset(
             metadata_path=Path(self.val_set["root"]) / self.val_set['meta'],
@@ -52,6 +59,8 @@ class AudioTextDataModule(LightningDataModule):
             melspec_dir=os.path.join(self.val_set["root"], self.val_set["melspec_dir"]),
             text_path=os.path.join(self.val_set["root"], self.val_set["text_path"]),
             max_sample=self.val_set["max_eval_sample"],
+            mel_mean = self.mel_mean,
+            mel_std = self.mel_std
         )
 
     def train_dataloader(self):

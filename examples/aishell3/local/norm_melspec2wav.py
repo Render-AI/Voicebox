@@ -27,7 +27,7 @@ def mel2wav(mel_dir, denorm=False):
         mel = torch.load(pt)
 
         if denorm:
-            mel = mel * (mel_std**2) + mel_mean
+            mel = mel * mel_std + mel_mean
 
         if mel.shape[1] != 128:
             mel = torch.transpose(mel, 1 ,2)
